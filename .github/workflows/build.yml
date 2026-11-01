@@ -1,11 +1,12 @@
-name: Prototype build
+name: Build and deploy SyllaKeep to GitHub Pages
 
 on:
   push:
     branches:
       - main
-      - feature/syllakeep-prototype
+      - fix/github-pages-blank-screen
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -24,3 +25,22 @@ jobs:
         run: npm install
       - name: Build prototype
         run: npm run build
+      - name: Upload GitHub Pages artifact
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
