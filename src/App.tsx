@@ -136,7 +136,10 @@ function App() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ board: "ISC", standard: "Class 11", year: "2026–27", competitive: ["JEE Main"], name: "Student" }));
     localStorage.setItem(PREVIEW_KEY, "yes");
     setPreview(true);
-    setTracks([school, exam]);
+    setTracks([
+      { id: "demo-school", label: "ISC · Class 11 (preview)", kind: "School" },
+      { id: "demo-jee", label: "JEE Main (preview)", kind: "Competitive" }
+    ]);
     setActiveTrack("demo-school");
     localStorage.setItem(TRACK_KEY, "demo-school");
     setShowSetup(false);
