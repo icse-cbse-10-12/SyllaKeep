@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowDownRight, ArrowRight, BookOpen, CalendarDays, Check, CheckCheck,
-  ChevronDown, CircleHelp, Clock3, CloudOff, FileCheck2, Filter, GraduationCap,
+  ChevronDown, CircleHelp, Clock3, CloudOff, Filter, GraduationCap,
   LayoutDashboard, ListChecks, Menu, Plus, RotateCcw, Search, Settings2,
   ShieldCheck, Sparkles, Target, X
 } from "lucide-react";
@@ -65,14 +65,19 @@ function App() {
   useEffect(() => {
     if (!profile) { setTracks([]); return; }
     const schoolId = "school-" + profile.board.toLowerCase() + "-" + profile.standard.replace(" ", "").toLowerCase();
-    const next: Track[] = [{ id: schoolId, label: profile.board + " · " + profile.standard, kind: "School", board: profile.board, standard: profile.standard, year: profile.year }];
-    profile.competitive.forEach((exam) => next.push({ id: "exam-" + exam.toLowerCase().replaceAll(" ", "-"), label: exam, kind: "Competitive" }));
+    const next: Track[] = preview
+      ? [
+          { id: "demo-school", label: "ISC · Class 11 (preview)", kind: "School" },
+          { id: "demo-jee", label: "JEE Main (preview)", kind: "Competitive" }
+        ]
+      : [{ id: schoolId, label: profile.board + " · " + profile.standard, kind: "School", board: profile.board, standard: profile.standard, year: profile.year }];
+    if (!preview) profile.competitive.forEach((exam) => next.push({ id: "exam-" + exam.toLowerCase().replace(/ /g, "-"), label: exam, kind: "Competitive" }));
     setTracks(next);
     if (!activeTrack || !next.some((t) => t.id === activeTrack)) {
       setActiveTrack(next[0].id);
       localStorage.setItem(TRACK_KEY, next[0].id);
     }
-  }, [profile]);
+  }, [profile, preview]);
 
   useEffect(() => { if (activeTrack) localStorage.setItem(TRACK_KEY, activeTrack); }, [activeTrack]);
 
@@ -125,8 +130,6 @@ function App() {
     showToast("Your workspace is set up on this device.");
   };
   const loadDemo = async () => {
-    const school: Track = { id: "demo-school", label: "ISC · Class 11 (preview)", kind: "School" };
-    const exam: Track = { id: "demo-jee", label: "JEE Main (preview)", kind: "Competitive" };
     await db.topics.bulkPut(seedTopics);
     setTopics((old) => [...old.filter((t) => !seedTopics.some((s) => s.id === t.id)), ...seedTopics]);
     setProfile({ board: "ISC", standard: "Class 11", year: "2026–27", competitive: ["JEE Main"], name: "Student" });
