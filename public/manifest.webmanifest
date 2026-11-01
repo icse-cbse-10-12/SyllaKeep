@@ -1,0 +1,17 @@
+{
+  "name": "SyllaKeep",
+  "short_name": "SyllaKeep",
+  "description": "Your syllabus. Your progress. Your record.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f6f5f1",
+  "theme_color": "#203b5e",
+  "icons": [
+    {
+      "src": "./syllakeep-logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
