@@ -5,21 +5,11 @@ import {
   LayoutDashboard, ListChecks, Menu, Plus, RotateCcw, Search, Settings2,
   ShieldCheck, Sparkles, Target, X
 } from "lucide-react";
-import Dexie, { type Table } from "dexie";
+import { db, getLedgerStatus, recordTopicOperation, undoLatestOperation, type Topic, type TopicStatus } from "./lib/offline-ledger";
 
-type TopicStatus = "Not started" | "In progress" | "Complete";
 type Track = { id: string; label: string; kind: "School" | "Competitive"; board?: string; standard?: string; year?: string };
-type Topic = { id: string; trackId: string; subject: string; title: string; status: TopicStatus; updatedAt: string; nextRevision?: string; note?: string };
 type Profile = { board: string; standard: string; year: string; competitive: string[]; name: string };
 
-class SyllaDatabase extends Dexie {
-  topics!: Table<Topic, string>;
-  constructor() {
-    super("syllakeep-prototype");
-    this.version(1).stores({ topics: "id, trackId, subject, status, nextRevision" });
-  }
-}
-const db = new SyllaDatabase();
 const STORAGE_KEY = "syllakeep-prototype-profile-v1";
 const TRACK_KEY = "syllakeep-prototype-active-track-v1";
 const PREVIEW_KEY = "syllakeep-prototype-preview-v1";
@@ -43,6 +33,8 @@ function App() {
   const [tracks, setTracks] = useState<Track[]>([]);
   const [activeTrack, setActiveTrack] = useState(localStorage.getItem(TRACK_KEY) || "");
   const [topics, setTopics] = useState<Topic[]>([]);
+  const [pendingOps, setPendingOps] = useState(0);
+  const [canUndo, setCanUndo] = useState(false);
   const [page, setPage] = useState("Today");
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("All");
@@ -58,6 +50,8 @@ function App() {
     let alive = true;
     db.topics.toArray().then((rows) => {
       if (alive) setTopics(rows);
+      const ledger = await getLedgerStatus();
+      if (alive) { setPendingOps(ledger.pending); setCanUndo(ledger.canUndo); }
     }).catch(() => setNotice("Local storage could not be opened in this browser."));
     return () => { alive = false; };
   }, []);
@@ -95,28 +89,40 @@ function App() {
   const isDemo = preview && (activeTrack === "demo-school" || activeTrack === "demo-jee");
 
   const showToast = (text: string) => { setNotice(text); window.setTimeout(() => setNotice(""), 3200); };
+  const refreshLedger = async () => { const ledger = await getLedgerStatus(); setPendingOps(ledger.pending); setCanUndo(ledger.canUndo); };
   const changeStatus = async (topic: Topic) => {
     const statuses: TopicStatus[] = ["Not started", "In progress", "Complete"];
     const nextStatus = statuses[(statuses.indexOf(topic.status) + 1) % statuses.length];
     const updated = { ...topic, status: nextStatus, updatedAt: today() };
-    await db.topics.put(updated);
+    await recordTopicOperation(topic, updated, "status_changed");
     setTopics((old) => old.map((t) => t.id === topic.id ? updated : t));
+    await refreshLedger();
     showToast("“" + topic.title + "” marked " + nextStatus.toLowerCase() + ".");
   };
   const scheduleRevision = async (topic: Topic, days = 3) => {
     const updated = { ...topic, nextRevision: plusDays(days), updatedAt: today() };
-    await db.topics.put(updated);
+    await recordTopicOperation(topic, updated, "revision_scheduled");
     setTopics((old) => old.map((t) => t.id === topic.id ? updated : t));
+    await refreshLedger();
     showToast("Revision scheduled for " + new Date(updated.nextRevision!).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) + ".");
   };
   const addTopic = async () => {
     if (!form.title.trim() || !active) return;
     const topic: Topic = { id: id(), trackId: active.id, subject: form.subject.trim() || "Other", title: form.title.trim(), status: form.status, updatedAt: today() };
-    await db.topics.put(topic);
+    await recordTopicOperation(null, topic, "topic_created");
     setTopics((old) => [...old, topic]);
+    await refreshLedger();
     setForm({ subject: "Physics", title: "", status: "Not started" });
     setShowAdd(false);
     showToast("Chapter added to your local record.");
+  };
+  const undoLast = async () => {
+    const result = await undoLatestOperation();
+    if (!result) return;
+    const rows = await db.topics.toArray();
+    setTopics(rows);
+    await refreshLedger();
+    showToast("Last progress change undone.");
   };
   const saveSetup = async () => {
     const nextProfile: Profile = { ...setup, name: setup.name.trim() };
@@ -147,7 +153,8 @@ function App() {
   };
   const resetLocal = async () => {
     if (!window.confirm("Clear this prototype's saved profile and chapters from this browser? This cannot be undone.")) return;
-    await db.topics.clear();
+    await db.transaction("rw", db.topics, db.progressEvents, db.syncOutbox, async () => { await db.topics.clear(); await db.progressEvents.clear(); await db.syncOutbox.clear(); });
+    setPendingOps(0); setCanUndo(false);
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(TRACK_KEY);
     localStorage.removeItem(PREVIEW_KEY);
@@ -212,7 +219,7 @@ function App() {
           <button className="mobile-menu-button" aria-label="Open menu" onClick={() => setMobileMenu(true)}><Menu size={21} /></button>
           <div className="breadcrumb">{active?.kind === "Competitive" ? "Competitive preparation" : "School preparation"} <span>/</span> {active?.label ?? "Set up your workspace"}</div>
           <div className="topbar-actions">
-            <span className={"save-state " + (navigator.onLine ? "" : "offline")}><span className="status-dot"></span>{navigator.onLine ? "Saved on this device" : "Offline · local save"}</span>
+            <span className={"save-state " + (navigator.onLine ? "" : "offline")}><span className="status-dot"></span>{navigator.onLine ? `Saved on this device · ${pendingOps} change${pendingOps === 1 ? "" : "s"} awaiting sync` : "Offline · saved on this device"}</span>
             <button className="avatar" aria-label="Open workspace settings" onClick={() => setShowSetup(true)}>{profile?.name?.slice(0, 1).toUpperCase() || "S"}</button>
           </div>
         </header>
@@ -253,7 +260,7 @@ function App() {
             <section className="panel syllabus-panel"><div className="syllabus-tools"><div className="search-box"><Search size={17} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Find a chapter or subject" aria-label="Search chapters" /><kbd>/</kbd></div><div className="filter-box"><Filter size={15} /><select value={filter} onChange={(e) => setFilter(e.target.value)} aria-label="Filter by progress"><option>All</option><option>Not started</option><option>In progress</option><option>Complete</option></select><ChevronDown size={14} /></div></div>
               <div className="list-summary"><span>{visibleTopics.length} {visibleTopics.length === 1 ? "chapter" : "chapters"}</span><span>Tap a status to change it</span></div>
               {visibleTopics.length ? <div className="topic-list">{visibleTopics.map((topic) => <TopicRow key={topic.id} topic={topic} onStatus={changeStatus} onRevise={scheduleRevision} />)}</div> : <div className="empty-inline"><div className="empty-icon small"><BookOpen size={21} /></div><h3>{trackTopics.length ? "No chapters match this view" : "No chapters here yet"}</h3><p>{trackTopics.length ? "Try a different search or status filter." : "Add chapters from your own syllabus. Official syllabus packs are not connected in this prototype."}</p>{!trackTopics.length && <button className="button button-primary" onClick={() => setShowAdd(true)}><Plus size={16} /> Add your first chapter</button>}</div>}
-              <div className="local-note"><CloudOff size={15} /><span>Changes are stored locally on this device. Cloud sync and account sign-in are not connected in this prototype.</span></div>
+              <div className="local-note"><CloudOff size={15} /><span>Changes are saved locally. Cloud sync is not connected; queued operations remain on this device.</span></div>
             </section>
           ) : page === "Revisions" ? (
             <section className="panel"><div className="panel-heading"><div><h2>Revision list</h2><p>Based on dates you have scheduled.</p></div><span className="quiet-count">{dueTopics.length} due</span></div>
@@ -266,7 +273,7 @@ function App() {
               <section className="panel calculation-panel"><div className="panel-heading"><div><h2>How this is calculated</h2><p>No readiness score, ranking or estimated marks.</p></div><CircleHelp size={19} /></div><div className="calculation-line"><span>Completion rate</span><strong>{completed} ÷ {trackTopics.length || 0} chapters {trackTopics.length ? "= " + pct + "%" : "— no chapters added"}</strong></div><p className="muted-paragraph">Only the chapters in this workspace are counted. The tracker does not claim to know your exam readiness or mastery from a completion tick.</p></section>
             </>
           )}
-          <footer className="page-footer"><span>SyllaKeep · Your syllabus. Your progress. Your record.</span><span><ShieldCheck size={14} /> Private by design · Prototype stored locally</span></footer>
+          <footer className="page-footer"><span>SyllaKeep · Your syllabus. Your progress. Your record.</span><span><ShieldCheck size={14} /> Private by design · Local storage only; cloud sync not connected</span></footer>
         </div>
       </main>
 
@@ -279,7 +286,7 @@ function App() {
       </section></div>}
 
       {showAdd && <div className="modal-backdrop" role="presentation"><section className="modal add-modal" role="dialog" aria-modal="true" aria-labelledby="add-title"><div className="modal-top"><div><p className="eyebrow">YOUR SYLLABUS</p><h2 id="add-title">Add a chapter</h2></div><button className="icon-button" aria-label="Close add chapter" onClick={() => setShowAdd(false)}><X size={19} /></button></div><p className="modal-intro">Add a topic from your own syllabus. Official syllabus data is not bundled yet.</p><label className="field-label">Chapter name<input autoFocus value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g. Laws of Motion" onKeyDown={(e) => { if (e.key === "Enter") void addTopic(); }} /></label><label className="field-label">Subject<input value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} placeholder="e.g. Physics" /></label><label className="field-label">Starting status<select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as TopicStatus })}><option>Not started</option><option>In progress</option><option>Complete</option></select></label><div className="modal-actions"><button className="button button-quiet" onClick={() => setShowAdd(false)}>Cancel</button><button className="button button-primary" disabled={!form.title.trim()} onClick={() => void addTopic()}><Plus size={16} /> Add chapter</button></div></section></div>}
-      {notice && <div className="toast" role="status"><Check size={16} />{notice}</div>}
+      {notice && <div className="toast" role="status"><Check size={16} />{notice}{canUndo && <button className="text-button" onClick={() => void undoLast()}>Undo</button>}</div>}
     </div>
   );
 }
