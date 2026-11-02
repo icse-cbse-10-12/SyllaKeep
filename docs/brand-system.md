@@ -2,49 +2,64 @@
 
 **Brand promise:** Your syllabus. Your progress. Your record.
 
-**Positioning:** A calm, private and dependable place for students to keep an honest record of preparation. The identity should communicate clarity, ownership and reliability—not coaching-centre urgency or competitive pressure.
+**Positioning:** A calm, private and dependable place for students to keep an honest record of preparation. The identity communicates clarity, ownership and reliability—not coaching-centre urgency or competitive pressure.
 
-## Visual identity
+## Colour architecture
 
-### Colour roles
+The 60/30/10 principle describes visual balance across a screen; it is a design guide, not a mathematically enforced ratio.
 
-| Role | Token | Value | Usage |
-|---|---|---|---|
-| Primary (about 60%) | `--brand-primary` | `#203B5E` | Navigation, primary actions, key headings and progress marks |
-| Neutral (about 30%) | `--brand-neutral` / `--brand-surface` | `#F6F5F1` / `#FFFEFA` | App canvas, cards and reading surfaces |
-| Accent (about 10%) | `--brand-accent` | `#E6A72E` | Small emphasis, due/revision cues and selected highlights |
+### Light theme — Paper Clean
 
-Supporting colours are semantic, not extra brand accents: ink `#202936`, muted text `#747C86`, lines `#E8E6DF`, positive state `#2F7256`.
+| Role | Token | Value |
+|---|---|---|
+| Dominant canvas | `--sylla-bg` | `#F8FAFC` |
+| Surface | `--sylla-surface` | `#FFFFFF` |
+| Border | `--sylla-border` | `#E2E8F0` |
+| Primary text | `--sylla-text` | `#0F172A` |
+| Muted text | `--sylla-muted` | `#64748B` |
+| JEE identity accent | `--sylla-jee` | `#2563EB` |
+| NEET identity accent | `--sylla-neet` | `#059669` |
 
-### Typography
+### Dark theme — Midnight Focus
 
-- **Headlines and brand wordmark:** Manrope, with a system fallback.
-- **Interface and body copy:** DM Sans, with a system fallback.
-- Keep body copy readable; use weight and spacing rather than decorative type treatments.
+| Role | Token | Value |
+|---|---|---|
+| Dominant canvas | `--sylla-bg` | `#101318` |
+| Surface | `--sylla-surface` | `#203B5E` |
+| Border | `--sylla-border` | `#2A4D7C` |
+| Primary text | `--sylla-text` | `#F1F5F9` |
+| Muted text | `--sylla-muted` | `#94A3B8` |
+| JEE identity accent | `--sylla-jee` | `#3B82F6` |
+| NEET identity accent | `--sylla-neet` | `#10B981` |
 
-The font stylesheet is loaded from Google Fonts when online. System fallbacks keep the interface usable when the font service is unavailable or the app is offline.
+JEE blue and NEET green identify workspaces only. They do not communicate completion, correctness or performance. Success, warning and error use separate semantic tokens (`--sylla-success`, `--sylla-warning`, `--sylla-danger`).
 
-### Shape and graphic motif
+## Theme behaviour
 
-The existing logo combines a folded document, three checked syllabus rows and an upward path. `public/brand-pattern.svg` abstracts those elements into a low-contrast repeating motif. Use it sparingly as a background texture; never place it behind dense text or interactive controls.
+- The theme switch is available in the top bar and exposes its state to assistive technology.
+- The selected theme is stored locally as `syllakeep-theme`; when no preference exists, the device colour preference is used.
+- The initial HTML applies the stored/device theme before the app mounts to reduce a flash of the wrong theme.
+- The browser theme colour follows the active theme. If local storage is unavailable, switching still works for the current session.
+- Theme selection is a presentation preference; it does not alter student data or progress calculations.
 
-### Photography and illustration
+## Typography
 
-The product UI should prefer its own real interface and purposeful diagrams over generic stock photography. If photography is introduced later, use one consistent natural-light treatment, restrained backgrounds and authentic student study contexts. Do not use staged success imagery or imply results the product cannot substantiate.
+- Headlines and wordmark: Manrope, with a system fallback.
+- Interface and body copy: DM Sans, with a system fallback.
+- Google Fonts load when online; system fallbacks keep the interface usable offline.
 
-### Voice
+## Shape and graphic motif
 
-**Calm, clear, respectful and quietly encouraging.** Use specific, non-judgmental language. Describe what the record says; never infer mastery, exam readiness or personal worth from completion data. Avoid guilt, urgency, streak pressure and exaggerated promises.
+The logo's folded document, checked syllabus rows and rising path form a low-contrast background motif. Use it sparingly and never behind dense text or controls.
 
-## Application rules
+## Voice and product rules
 
-- Keep the primary/neutral/accent balance close to 60/30/10 across each screen, not every component.
-- Reserve amber for meaningful emphasis; do not colour every icon or card.
-- Keep surfaces, borders, corner radii and focus states consistent.
-- Preserve contrast, keyboard focus visibility, reduced-motion preferences and mobile readability.
-- The brand pattern is decorative only and must never carry information.
-- Keep all identity assets lightweight and local so the core interface remains useful offline.
+Calm, clear, respectful and quietly encouraging. Describe what the record says; never infer mastery, exam readiness or personal worth from completion data. Avoid guilt, urgency, streak pressure and exaggerated promises. Prefer real interface examples and purposeful diagrams over generic stock imagery.
 
-## Touchpoint checklist
+## Verification checklist
 
-Apply the same tokens and voice to onboarding, workspace navigation, Today, Syllabus, Revisions, Progress, empty/error/offline states, app icon, website metadata, release notes and social assets. Verify at narrow Android widths, keyboard-only navigation, reduced motion and with network access disabled.
+- Check both themes at narrow Android widths and desktop widths.
+- Verify keyboard focus, screen-reader names, reduced-motion behaviour and readable contrast.
+- Test theme persistence and the first paint with storage available and unavailable.
+- Verify all actual screens and modal states; this token layer does not substitute for full accessibility or device testing.
+- Keep the core interface functional when offline; fonts may fall back to system fonts.

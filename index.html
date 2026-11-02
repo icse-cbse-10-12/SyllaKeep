@@ -3,7 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#203b5e" />
+    <meta name="theme-color" content="#F8FAFC" />
+    <script>try { const saved = localStorage.getItem("syllakeep-theme"); const theme = saved === "dark" || saved === "light" ? saved : (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"); document.documentElement.classList.toggle("dark", theme === "dark"); document.documentElement.dataset.theme = theme; } catch (_) {}</script>
     <meta name="description" content="SyllaKeep — a calm, private record of your study progress." />
     <link rel="icon" type="image/svg+xml" href="/syllakeep-logo.svg" />
     <link rel="manifest" href="/manifest.webmanifest" />

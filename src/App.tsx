@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import ThemeToggle from "./ThemeToggle";
 import {
   ArrowDownRight, ArrowRight, BookOpen, CalendarDays, Check, CheckCheck,
   ChevronDown, CircleHelp, Clock3, CloudOff, Filter, GraduationCap,
@@ -170,7 +171,7 @@ function App() {
   const greeting = profile?.name ? "Good to see you, " + profile.name : "Your preparation, kept in order";
 
   return (
-    <div className="app-shell">
+    <div className="app-shell" data-track={active?.label.toLowerCase().includes("neet") ? "neet" : active?.label.toLowerCase().includes("jee") ? "jee" : "school"}>
       <aside className={"sidebar " + (mobileMenu ? "sidebar-open" : "")}>
         <a className="brand" href="#" onClick={(e) => { e.preventDefault(); setPage("Today"); }}>
           <img src="/syllakeep-logo.svg" alt="" />
@@ -212,6 +213,7 @@ function App() {
           <button className="mobile-menu-button" aria-label="Open menu" onClick={() => setMobileMenu(true)}><Menu size={21} /></button>
           <div className="breadcrumb">{active?.kind === "Competitive" ? "Competitive preparation" : "School preparation"} <span>/</span> {active?.label ?? "Set up your workspace"}</div>
           <div className="topbar-actions">
+            <ThemeToggle />
             <span className={"save-state " + (navigator.onLine ? "" : "offline")}><span className="status-dot"></span>{navigator.onLine ? "Saved on this device" : "Offline · local save"}</span>
             <button className="avatar" aria-label="Open workspace settings" onClick={() => setShowSetup(true)}>{profile?.name?.slice(0, 1).toUpperCase() || "S"}</button>
           </div>
