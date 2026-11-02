@@ -29,7 +29,12 @@
   --muted: var(--brand-muted);
   --line: var(--brand-line);
   --green: var(--brand-positive);
-  font-family: "DM Sans", "Segoe UI", sans-serif;
+  --font-display: "Fraunces", Georgia, serif;
+  --font-ui: "Inter", "Segoe UI", Arial, sans-serif;
+  --font-data: "Inter", "Segoe UI", Arial, sans-serif;
+  --type-page-title: clamp(1.75rem, 3.2vw, 2.25rem);
+  --type-body: 0.875rem;
+  font-family: var(--font-ui);
 }
 :root.dark {
   color-scheme: dark;
@@ -64,8 +69,8 @@
 }
 html { background: var(--sylla-bg); color-scheme: light; }
 html.dark { background: var(--sylla-bg); color-scheme: dark; }
-body { color: var(--sylla-text); background: var(--sylla-bg); font-family: "DM Sans", "Segoe UI", sans-serif; text-rendering: optimizeLegibility; }
-:where(h1,h2,h3,.brand > span,.modal-brand) { font-family: "Manrope", "Segoe UI", sans-serif; }
+body { color: var(--sylla-text); background: var(--sylla-bg); font-family: var(--font-ui); text-rendering: optimizeLegibility; }
+:where(h1,h2,h3,.brand > span,.modal-brand) { font-family: var(--font-ui); }
 ::selection { color: #fff; background: var(--brand-primary); }
 :where(button,input,select,a):focus-visible { outline: 2px solid var(--sylla-jee); outline-offset: 3px; }
 .page-heading { position: relative; isolation: isolate; overflow: hidden; border-radius: 12px; padding: 2px 2px 5px; }
@@ -77,7 +82,7 @@ body { color: var(--sylla-text); background: var(--sylla-bg); font-family: "DM S
 .progress-track span { background: var(--brand-primary); transition: width .28s ease, background-color .2s ease; }
 .status-complete { background: var(--sylla-success); border-color: var(--sylla-success); }
 .task-kicker,.revision-date span { color: var(--sylla-warning); }
-.theme-toggle { display:inline-flex; align-items:center; justify-content:center; gap:7px; min-height:34px; padding:0 11px; border:1px solid var(--sylla-border); border-radius:8px; background:var(--sylla-surface); color:var(--sylla-text); font:600 11px "DM Sans",sans-serif; cursor:pointer; transition:background-color .18s,border-color .18s,color .18s; }
+.theme-toggle { display:inline-flex; align-items:center; justify-content:center; gap:7px; min-height:34px; padding:0 11px; border:1px solid var(--sylla-border); border-radius:8px; background:var(--sylla-surface); color:var(--sylla-text); font:600 11px var(--font-ui); cursor:pointer; transition:background-color .18s,border-color .18s,color .18s; }
 .theme-toggle:hover { border-color:var(--sylla-muted); }
 .theme-toggle:focus-visible { outline:2px solid var(--sylla-jee); outline-offset:3px; }
 .app-shell { background:var(--sylla-bg); color:var(--sylla-text); }
@@ -106,3 +111,39 @@ body { color: var(--sylla-text); background: var(--sylla-bg); font-family: "DM S
 :root.dark .mobile-scrim { background:rgb(0 0 0 / 62%); }
 :root.dark .page-heading::after { opacity:.07; }
 @media (max-width:760px) { .page-heading::after { right:-72px; opacity:.075; } .theme-toggle { min-width:34px; padding:0 8px; } }
+
+
+/* Typography system — Fraunces for expressive page-level moments, Inter for the working interface. */
+body { font-family: var(--font-ui); font-size: var(--type-body); }
+:where(button,input,select,textarea) { font-family: var(--font-ui); }
+.page-heading h1 {
+  font-family: var(--font-display);
+  font-size: var(--type-page-title);
+  font-weight: 600;
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+  font-optical-sizing: auto;
+}
+.setup-modal #setup-title,
+.empty-workspace h2 {
+  font-family: var(--font-display);
+  font-size: clamp(1.35rem, 2.3vw, 1.6rem);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+  font-optical-sizing: auto;
+}
+@media (max-width: 760px) {
+  .page-heading h1 { font-size: clamp(1.5rem, 6vw, 1.75rem); }
+}
+.summary-number,
+.progress-ring strong,
+.calculation-line strong,
+.revision-date strong {
+  font-family: var(--font-data);
+  font-variant-numeric: tabular-nums;
+}
+:where(.eyebrow,.workspace-label,.task-kicker,.revision-date span) {
+  font-family: var(--font-ui);
+  font-weight: 700;
+}

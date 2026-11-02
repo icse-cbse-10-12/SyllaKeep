@@ -44,9 +44,25 @@ JEE blue and NEET green identify workspaces only. They do not communicate comple
 
 ## Typography
 
-- Headlines and wordmark: Manrope, with a system fallback.
-- Interface and body copy: DM Sans, with a system fallback.
-- Google Fonts load when online; system fallbacks keep the interface usable offline.
+**Selected pairing: Fraunces + Inter.** This pairing adds a restrained editorial signature without making the working interface ornamental.
+
+- **Fraunces — display role only:** primary page titles, the setup welcome headline and the empty-workspace headline. Use 600 weight, compact line-height and restrained negative tracking. Do not use it for dense lists, table-like data, controls or long paragraphs.
+- **Inter — interface role:** body copy, navigation, card headings, chapter names, buttons, form labels, helper text and all other interface typography. Use 400 for reading, 500–600 for emphasis and 700 for compact labels.
+- **Inter — data role:** counts, percentages, dates and progress figures. Enable tabular numerals so changing values do not cause visual jitter.
+- Keep the wordmark and utility labels in Inter; the brand mark should remain clear at small sizes.
+- Use a maximum of two font families. Do not introduce a third font for numbers or icons.
+- Google Fonts load when online; Georgia and system sans-serif fallbacks keep the interface usable when offline. The fallback may differ visually, but must preserve hierarchy and legibility.
+- Load only the weights used by the interface. Keep `font-display: swap` so text remains visible while web fonts load.
+
+### Type hierarchy
+
+| Role | Typeface | Guidance |
+|---|---|---|
+| Display / page title | Fraunces | Large, selective, high-level page identity |
+| Section and card headings | Inter | Clear hierarchy without competing with the page title |
+| Body and supporting copy | Inter | Comfortable reading; avoid overly small text |
+| Labels and metadata | Inter | Compact but readable; use weight and spacing, not all-caps everywhere |
+| Data and metrics | Inter | Tabular numerals for stable alignment |
 
 ## Shape and graphic motif
 
