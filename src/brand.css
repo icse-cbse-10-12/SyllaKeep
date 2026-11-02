@@ -1,0 +1,84 @@
+/* SyllaKeep identity layer — tokens and repeatable brand cues. */
+:root {
+  color-scheme: light;
+  --brand-primary: #203b5e;
+  --brand-primary-deep: #172d49;
+  --brand-neutral: #f6f5f1;
+  --brand-surface: #fffefa;
+  --brand-accent: #e6a72e;
+  --brand-ink: #202936;
+  --brand-muted: #747c86;
+  --brand-line: #e8e6df;
+  --brand-positive: #2f7256;
+  --navy: var(--brand-primary);
+  --navy-dark: var(--brand-primary-deep);
+  --amber: var(--brand-accent);
+  --paper: var(--brand-surface);
+  --canvas: var(--brand-neutral);
+  --ink: var(--brand-ink);
+  --muted: var(--brand-muted);
+  --line: var(--brand-line);
+  --green: var(--brand-positive);
+  font-family: "DM Sans", "Segoe UI", sans-serif;
+}
+
+html { background: var(--brand-neutral); }
+body {
+  color: var(--brand-ink);
+  font-family: "DM Sans", "Segoe UI", sans-serif;
+  text-rendering: optimizeLegibility;
+}
+:where(h1, h2, h3, .brand > span, .modal-brand) {
+  font-family: "Manrope", "Segoe UI", sans-serif;
+}
+::selection { color: #fff; background: var(--brand-primary); }
+:where(button, input, select, a):focus-visible {
+  outline-color: #426b96;
+  outline-offset: 3px;
+}
+
+/* The logo's folded checklist and rising path become a quiet, reusable motif. */
+.page-heading {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 12px;
+  padding: 2px 2px 5px;
+}
+.page-heading::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+  top: -42px;
+  right: -34px;
+  width: 250px;
+  height: 150px;
+  opacity: .10;
+  background: url("/brand-pattern.svg") repeat;
+  background-size: 104px 104px;
+  mask-image: linear-gradient(135deg, transparent 0%, #000 45%, #000 100%);
+}
+.page-heading > * { position: relative; }
+
+/* Brand surfaces stay calm; accent is reserved for priority and progress cues. */
+.button-primary {
+  background: var(--brand-primary);
+  box-shadow: 0 1px 2px rgb(23 45 73 / 12%);
+}
+.button-primary:hover { background: var(--brand-primary-deep); }
+.nav-active, .track-option.selected {
+  background: #edf1f5;
+  border-color: #e1e7ed;
+  color: var(--brand-primary);
+}
+.progress-track span { background: var(--brand-primary); }
+.status-complete { background: var(--brand-primary); border-color: var(--brand-primary); }
+.task-kicker, .revision-date span { color: #94681d; }
+
+@media (max-width: 760px) {
+  .page-heading::after { right: -72px; opacity: .075; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .button, .progress-track span { transition: none !important; }
+}
