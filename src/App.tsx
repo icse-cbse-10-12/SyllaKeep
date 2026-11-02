@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  ArrowDownRight, ArrowRight, BookOpen, CalendarDays, Check, CheckCheck,
+  AlertTriangle, ArrowDownRight, ArrowRight, BookOpen, CalendarDays, Check, CheckCheck,
   ChevronDown, CircleHelp, Clock3, CloudOff, Filter, GraduationCap,
   LayoutDashboard, ListChecks, Menu, Plus, RotateCcw, Search, Settings2,
   ShieldCheck, Sparkles, Target, X
@@ -43,6 +43,8 @@ function App() {
   const [mobileMenu, setMobileMenu] = useState(false);
   const [preview, setPreview] = useState(localStorage.getItem(PREVIEW_KEY) === "yes");
   const [notice, setNotice] = useState("");
+  const [noticeIsError, setNoticeIsError] = useState(false);
+  const [storageReady, setStorageReady] = useState(false);
   const [form, setForm] = useState({ subject: "Physics", title: "", status: "Not started" as TopicStatus });
   const [setup, setSetup] = useState({ board: "ISC", standard: "Class 11", year: "2026–27", competitive: [] as string[], name: "" });
 
@@ -51,8 +53,8 @@ function App() {
     db.topics.toArray().then(async (rows) => {
       if (alive) setTopics(rows);
       const ledger = await getLedgerStatus();
-      if (alive) { setPendingOps(ledger.pending); setCanUndo(ledger.canUndo); }
-    }).catch(() => setNotice("Local storage could not be opened in this browser."));
+      if (alive) { setPendingOps(ledger.pending); setCanUndo(ledger.canUndo); setStorageReady(true); }
+    }).catch(() => { if (alive) { setStorageReady(false); setNotice("Your browser could not open local storage. Your existing saved data has not been changed. Try reloading or use a browser with site storage enabled."); } });
     return () => { alive = false; };
   }, []);
 
@@ -88,41 +90,54 @@ function App() {
   });
   const isDemo = preview && (activeTrack === "demo-school" || activeTrack === "demo-jee");
 
-  const showToast = (text: string) => { setNotice(text); window.setTimeout(() => setNotice(""), 3200); };
+  const showToast = (text: string) => { setNoticeIsError(false); setNotice(text); window.setTimeout(() => setNotice(""), 5200); };
+  const reportStorageError = (error: unknown) => { console.error("SyllaKeep local storage operation failed", error); setNoticeIsError(true); setNotice("This action could not be confirmed. Reload to check your saved progress, then try again. Check that this browser allows site storage and has available space."); window.setTimeout(() => setNotice(""), 7000); };
   const refreshLedger = async () => { const ledger = await getLedgerStatus(); setPendingOps(ledger.pending); setCanUndo(ledger.canUndo); };
   const changeStatus = async (topic: Topic) => {
-    const statuses: TopicStatus[] = ["Not started", "In progress", "Complete"];
-    const nextStatus = statuses[(statuses.indexOf(topic.status) + 1) % statuses.length];
-    const updated = { ...topic, status: nextStatus, updatedAt: today() };
-    await recordTopicOperation(topic, updated, "status_changed");
-    setTopics((old) => old.map((t) => t.id === topic.id ? updated : t));
-    await refreshLedger();
-    showToast("“" + topic.title + "” marked " + nextStatus.toLowerCase() + ".");
+    try {
+      const statuses: TopicStatus[] = ["Not started", "In progress", "Complete"];
+      const nextStatus = statuses[(statuses.indexOf(topic.status) + 1) % statuses.length];
+      const updated = { ...topic, status: nextStatus, updatedAt: today() };
+      await recordTopicOperation(topic, updated, "status_changed");
+      setTopics((old) => old.map((t) => t.id === topic.id ? updated : t));
+      await refreshLedger();
+      showToast("“" + topic.title + "” marked " + nextStatus.toLowerCase() + ".");
+  
+    } catch (error) { reportStorageError(error); }
   };
   const scheduleRevision = async (topic: Topic, days = 3) => {
-    const updated = { ...topic, nextRevision: plusDays(days), updatedAt: today() };
-    await recordTopicOperation(topic, updated, "revision_scheduled");
-    setTopics((old) => old.map((t) => t.id === topic.id ? updated : t));
-    await refreshLedger();
-    showToast("Revision scheduled for " + new Date(updated.nextRevision!).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) + ".");
+    try {
+      const updated = { ...topic, nextRevision: plusDays(days), updatedAt: today() };
+      await recordTopicOperation(topic, updated, "revision_scheduled");
+      setTopics((old) => old.map((t) => t.id === topic.id ? updated : t));
+      await refreshLedger();
+      showToast("Revision scheduled for " + new Date(updated.nextRevision!).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) + ".");
+  
+    } catch (error) { reportStorageError(error); }
   };
   const addTopic = async () => {
-    if (!form.title.trim() || !active) return;
-    const topic: Topic = { id: id(), trackId: active.id, subject: form.subject.trim() || "Other", title: form.title.trim(), status: form.status, updatedAt: today() };
-    await recordTopicOperation(null, topic, "topic_created");
-    setTopics((old) => [...old, topic]);
-    await refreshLedger();
-    setForm({ subject: "Physics", title: "", status: "Not started" });
-    setShowAdd(false);
-    showToast("Chapter added to your local record.");
+    try {
+      if (!form.title.trim() || !active) return;
+      const topic: Topic = { id: id(), trackId: active.id, subject: form.subject.trim() || "Other", title: form.title.trim(), status: form.status, updatedAt: today() };
+      await recordTopicOperation(null, topic, "topic_created");
+      setTopics((old) => [...old, topic]);
+      await refreshLedger();
+      setForm({ subject: "Physics", title: "", status: "Not started" });
+      setShowAdd(false);
+      showToast("Chapter added to your local record.");
+  
+    } catch (error) { reportStorageError(error); }
   };
   const undoLast = async () => {
-    const result = await undoLatestOperation();
-    if (!result) return;
-    const rows = await db.topics.toArray();
-    setTopics(rows);
-    await refreshLedger();
-    showToast("Last progress change undone.");
+    try {
+      const result = await undoLatestOperation();
+      if (!result) return;
+      const rows = await db.topics.toArray();
+      setTopics(rows);
+      await refreshLedger();
+      showToast("Last progress change undone.");
+  
+    } catch (error) { reportStorageError(error); }
   };
   const saveSetup = async () => {
     const nextProfile: Profile = { ...setup, name: setup.name.trim() };
@@ -136,7 +151,7 @@ function App() {
     showToast("Your workspace is set up on this device.");
   };
   const loadDemo = async () => {
-    await db.topics.bulkPut(seedTopics);
+    try { await db.topics.bulkPut(seedTopics); } catch (error) { reportStorageError(error); return; }
     setTopics((old) => [...old.filter((t) => !seedTopics.some((s) => s.id === t.id)), ...seedTopics]);
     setProfile({ board: "ISC", standard: "Class 11", year: "2026–27", competitive: ["JEE Main"], name: "Student" });
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ board: "ISC", standard: "Class 11", year: "2026–27", competitive: ["JEE Main"], name: "Student" }));
@@ -219,7 +234,7 @@ function App() {
           <button className="mobile-menu-button" aria-label="Open menu" onClick={() => setMobileMenu(true)}><Menu size={21} /></button>
           <div className="breadcrumb">{active?.kind === "Competitive" ? "Competitive preparation" : "School preparation"} <span>/</span> {active?.label ?? "Set up your workspace"}</div>
           <div className="topbar-actions">
-            <span className={"save-state " + (navigator.onLine ? "" : "offline")}><span className="status-dot"></span>{navigator.onLine ? `Saved on this device · ${pendingOps} change${pendingOps === 1 ? "" : "s"} awaiting sync` : "Offline · saved on this device"}</span>
+            <span className={"save-state " + (navigator.onLine ? "" : "offline")}><span className="status-dot"></span>{!storageReady ? "Local storage unavailable" : navigator.onLine ? `Saved on this device · ${pendingOps} locally queued · cloud sync not connected` : "Offline · saved on this device"}</span>
             <button className="avatar" aria-label="Open workspace settings" onClick={() => setShowSetup(true)}>{profile?.name?.slice(0, 1).toUpperCase() || "S"}</button>
           </div>
         </header>
@@ -286,7 +301,7 @@ function App() {
       </section></div>}
 
       {showAdd && <div className="modal-backdrop" role="presentation"><section className="modal add-modal" role="dialog" aria-modal="true" aria-labelledby="add-title"><div className="modal-top"><div><p className="eyebrow">YOUR SYLLABUS</p><h2 id="add-title">Add a chapter</h2></div><button className="icon-button" aria-label="Close add chapter" onClick={() => setShowAdd(false)}><X size={19} /></button></div><p className="modal-intro">Add a topic from your own syllabus. Official syllabus data is not bundled yet.</p><label className="field-label">Chapter name<input autoFocus value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g. Laws of Motion" onKeyDown={(e) => { if (e.key === "Enter") void addTopic(); }} /></label><label className="field-label">Subject<input value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} placeholder="e.g. Physics" /></label><label className="field-label">Starting status<select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as TopicStatus })}><option>Not started</option><option>In progress</option><option>Complete</option></select></label><div className="modal-actions"><button className="button button-quiet" onClick={() => setShowAdd(false)}>Cancel</button><button className="button button-primary" disabled={!form.title.trim()} onClick={() => void addTopic()}><Plus size={16} /> Add chapter</button></div></section></div>}
-      {notice && <div className="toast" role="status"><Check size={16} />{notice}{canUndo && <button className="text-button" onClick={() => void undoLast()}>Undo</button>}</div>}
+      {notice && <div className={"toast " + (noticeIsError ? "toast-error" : "")} role={noticeIsError ? "alert" : "status"}>{noticeIsError ? <AlertTriangle size={16} /> : <Check size={16} />}{notice}{canUndo && <button className="text-button" onClick={() => void undoLast()}>Undo</button>}</div>}
     </div>
   );
 }

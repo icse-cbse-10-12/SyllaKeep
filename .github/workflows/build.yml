@@ -23,6 +23,8 @@ jobs:
           node-version: 20
       - name: Install dependencies
         run: npm install
+      - name: Run offline ledger tests
+        run: npm test
       - name: Build prototype
         run: npm run build
       - name: Upload GitHub Pages artifact
