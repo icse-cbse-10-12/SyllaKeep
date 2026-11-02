@@ -48,7 +48,7 @@ function App() {
 
   useEffect(() => {
     let alive = true;
-    db.topics.toArray().then((rows) => {
+    db.topics.toArray().then(async (rows) => {
       if (alive) setTopics(rows);
       const ledger = await getLedgerStatus();
       if (alive) { setPendingOps(ledger.pending); setCanUndo(ledger.canUndo); }
